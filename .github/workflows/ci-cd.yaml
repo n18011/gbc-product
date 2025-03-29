@@ -123,4 +123,3 @@ jobs:
           kubectl apply -f k8s/base-deployment.yaml
           kubectl apply -f k8s/service.yaml
           kubectl apply -f k8s/ingress.yaml
-          kubectl rollout status deployment/gbc-app 
