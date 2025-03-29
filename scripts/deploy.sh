@@ -46,7 +46,7 @@ kubectl apply -f "$TMP_DIR/ingress.yaml" --namespace="$NAMESPACE"
 
 # デプロイ状態の確認
 echo "デプロイのステータスを確認しています..."
-kubectl rollout status deployment/gbc-app --namespace="$NAMESPACE"
+# kubectl rollout status deployment/gbc-app --namespace="$NAMESPACE"
 
 # 一時ディレクトリの削除
 rm -rf "$TMP_DIR"

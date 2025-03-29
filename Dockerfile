@@ -10,7 +10,7 @@ ENV APP_ENV=${APP_ENV}
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
 
 # アプリケーションファイルをコピー
-COPY ./app /usr/share/nginx/html
+COPY ./app/index.html /usr/share/nginx/html
 
 # ヘルスチェックのためのエンドポイント
 HEALTHCHECK --interval=30s --timeout=3s \
