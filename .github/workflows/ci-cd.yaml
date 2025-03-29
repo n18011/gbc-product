@@ -42,15 +42,14 @@ jobs:
             echo "environment=production" >> $GITHUB_OUTPUT
           else
             echo "environment=development" >> $GITHUB_OUTPUT
-          fi
-
+          
       # Docker認証（GitHub Container Registry）
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }} # Ensure this token has write:packages and read:packages permissions
 
       # イメージタグ設定
       - name: Extract metadata for Docker
@@ -101,7 +100,6 @@ jobs:
           else
             IMAGE_TAG=$(echo ${{ github.sha }} | cut -c1-7)
             sed -i "s|image: nginx:latest|image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:$IMAGE_TAG|g" k8s/base-deployment.yaml
-          fi
 
       # kubeconfig設定（実際の環境に合わせて調整）
       - name: Configure kubeconfig
