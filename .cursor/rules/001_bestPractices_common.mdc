@@ -1,0 +1,1073 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# 001_bestPractices_common.mdc
+- このファイルが読み込まれたら必ず「001_bestPractices_common.mdcを読み込みました！」と作業着手前にユーザーに必ず伝えてください。
+
+## 基本原則
+以下のルールを遵守して下さい。
+
+### 1. コミュニケーション
+- ユーザーとのコミュニケーションは常に日本語でお願いします。
+
+### 2. 重複実装の防止
+- 実装前に以下の確認を行ってください：
+    - 既存の類似機能の有無
+    - 同名または類似名の関数やコンポーネント
+    - 重複するAPIエンドポイント
+    - 共通化可能な処理の特定
+
+### 3. 単一責任の原則
+- 関数が長くなりすぎた場合は、小さな関数に分割して下さい。
+- ファイルが大きくなりすぎた場合は、小さなファイルに分割して下さい。
+
+### 4. 参照禁止ファイル
+- .envファイルの作成・読込・編集・削除は厳禁です。ユーザーに作業を促して下さい。
+- .envファイルはプロジェクトルートに配置しています。
+
+### 5. ファイル・フォルダ操作の原則
+- ファイルやフォルダの作成・編集前に必ず現在のカレントディレクトリを確認してください。
+- パスの指定は絶対パスではなく、現在のカレントディレクトリからの相対パスを使用してください。
+- 操作前にディレクトリ構造を確認し、意図した場所で作業を行うようにしてください。
+- ファイル操作の前後で、作業結果を確認してください。
+
+--
+
+## プロジェクト構成
+本プロジェクトは、
+Kubernetesを使用したマイクロサービスアーキテクチャを採用しています。
+フルスタックフレームワークとしてSvelteKit、データベースアクセスにはPrismaを使用しています。
+
+### ルートディレクトリ構造
+
+```
+/
+├── src/                    # SvelteKitアプリケーション
+│   ├── routes/            # ルーティング
+│   └── lib/              # 共有ライブラリ
+├── prisma/                # Prismaの設定
+│   └── schema.prisma     # データベーススキーマ
+├── k8s/                  # Kubernetes設定
+│   ├── frontend/        # フロントエンド関連
+│   ├── backend/         # バックエンド関連
+│   └── database/       # データベース関連
+├── docs/                # プロジェクトドキュメント
+└── tests/              # テストファイル
+```
+
+# サーバー構成概要
+- Webサーバー (2レプリカ)
+  - リソース制限: CPU: 200m, メモリ: 256Mi
+  - オートスケーリング: 2-4レプリカ
+- APIサーバー (1レプリカ)
+  - リソース制限: CPU: 500m, メモリ: 512Mi
+- DBサーバー (1レプリカ)
+  - リソース制限: CPU: 1000m, メモリ: 1Gi
+  - 永続ボリューム: 10Gi
+
+## プログラミング言語
+本プロジェクトは、バックエンドの実装もフロントエンドの実装も、TypeScriptを使用しています。基本、いかなる場合でもTypeScriptを使用して実装してください。
+
+### 1. 型の使用
+
+- 明示的な型アノテーションを使用
+- `any`型は避け、代わりに`unknown`使用
+- 複雑な型は`interface`/`type`で定義
+- 配列型は`T[]`形式を優先
+- 再利用可能な型は個別ファイルにエクスポート
+
+### 2. インターフェース/型エイリアス
+
+- 拡張必要時は`interface`
+- 高度な型操作には`type`
+- `I`プレフィックス不使用
+- 関連する型は同ファイルにまとめる
+
+### 3. Null/Undefinedの扱い
+
+- オプショナルチェーン`?.`活用
+- Nullish合体演算子`??`使用
+- 非nullアサーション`!`は避ける
+- 早期リターンでネスト削減
+
+### 4. モジュール構成
+
+- 絶対パスは`@/*`エイリアス使用
+- 型のみの場合は`import type`
+- 名前付きエクスポート優先
+- 循環参照を避ける
+
+### 5. エラー処理
+
+- 具体的なエラー型を使用
+- キャッチしたエラーに型付け
+- 非同期は`try/catch`または`Promise.catch()`
+
+### 6. コード品質
+
+- strictモード維持
+- 未使用の変数/型は削除
+- 型の計算コスト考慮
+- 型定義の循環参照回避
+
+
+## このプロジェクトで使用している技術スタック
+
+- フロントエンド: SvelteKit
+- バックエンド: SvelteKit (Server)
+- データベース: PostgreSQL
+- ORM: Prisma
+- コンテナオーケストレーション: Kubernetes
+- 開発言語: TypeScript
+
+### 開発ツール
+
+## 開発環境のセットアップ
+
+### 必要なツール
+
+1. **Node.js のインストール**
+
+  - bun のインストール
+
+2. **環境変数の設定**
+
+   - `.env.example` をコピーして `.env` ファイルを作成
+   - 必要な環境変数を設定
+
+3. **プロジェクトのセットアップ**
+
+### セットアップ手順
+1. 依存関係のインストール
+```bash
+bun install
+```
+
+2. 開発サーバーの起動
+```bash
+bun run dev
+```
+
+3. データベースのセットアップ
+```bash
+bunx prisma generate
+bunx prisma migrate dev
+```
+
+4. Kubernetesクラスタの準備
+```bash
+kind create cluster
+kubectl apply -f k8s/
+```
+
+### 開発ガイドライン
+- コードスタイル: Prettier + ESLint
+- テスト: Vitest + Playwright
+- Git: Conventional Commits
+- CI/CD: GitHub Actions
+
+### 開発ワークフロー
+
+1. **フロントエンド開発**
+
+
+2. **バックエンド開発**
+
+
+3. **データベース操作**
+
+   ```bash
+   # マイグレーションの作成
+   npx prisma migrate dev --name [マイグレーション名]
+
+   # スキーマの生成
+   npx prisma generate
+
+   # データベースのシード
+   yarn seed
+   ```
+
+4. **APIクライアント生成**
+
+
+5. **リントとフォーマット**
+
+   ```bash
+   # リント
+   bun run lint
+
+   ```
+
+## 技術的制約
+
+1. **フロントエンドの制約**
+
+   - データフェッチング戦略の選択
+
+2. **バックエンドの制約**
+
+   - SvelteKit のモジュール構造に従う必要性
+   - Prisma スキーマの制約
+   - API設計の一貫性
+
+3. **パフォーマンスの制約**
+   - 大量のデータ処理時のメモリ使用量
+   - APIレスポンスタイムの最適化
+   - フロントエンドのレンダリングパフォーマンス
+
+## 依存関係
+
+### 主要な依存関係
+
+1. **フロントエンド**
+
+2. **バックエンド**
+
+3. **共通**
+   - typescript: 型システム
+
+### 依存関係管理
+
+1. **SvelteKit**
+
+   - src/routes: フロントエンド
+   - src/routes/api: バックエンド
+   - src/prisma: データベーススキーマ
+
+2. **パッケージ管理**
+
+
+### DBに関する重要なルール
+- あなたはDB設計のプロです。
+- 常に現状のDB設計に沿って実装をします。
+- ORMはPrismaを採用しています。
+- schema.prismaは、/prisma内に定義されています。
+- schema.prismaを編集、マイグレーションを行った場合は必ず下記に記したER図も更新するようにしてください。
+- migrationは必ず
+
+### ER図
+
+```mermaid
+erDiagram
+    User ||--o{ Transaction : "creates"
+    User ||--o{ Category : "manages"
+    User ||--o{ Receipt : "uploads"
+    Transaction ||--o| Receipt : "has"
+    Transaction }|--|| Category : "belongs_to"
+
+    User {
+        string id PK
+        string email
+        string password
+        string name
+        Role role
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Transaction {
+        string id PK
+        TransactionType type
+        string categoryId FK
+        float amount
+        string description
+        datetime date
+        string createdBy FK
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    Category {
+        string id PK
+        string name
+        datetime createdAt
+        datetime updatedAt
+        string createdBy FK
+    }
+
+    Receipt {
+        string id PK
+        string transactionId FK
+        string filePath
+        string uploadedBy FK
+        datetime uploadDate
+        datetime createdAt
+        datetime updatedAt
+    }
+```
+
+以下は各エンティティの主要属性です：
+- User: ユーザー管理（ADMIN/VIEWER/ACCOUNTANT）
+- Transaction: 取引記録（収入/支出）
+- Category: カテゴリ管理
+- Receipt: 領収書管理
+
+--
+
+
+## 概要
+このドキュメントでは、コミットとプルリクエストの作成に関するベストプラクティスを説明します。
+
+### コミットの作成
+
+コミットを作成する際は、以下の手順に従います：
+
+1. 変更の確認
+
+   ```bash
+   # 未追跡ファイルと変更の確認
+   git status
+
+   # 変更内容の詳細確認
+   git diff
+
+   # コミットメッセージのスタイル確認
+   git log
+   ```
+
+2. 変更の分析
+
+   - 変更または追加されたファイルの特定
+   - 変更の性質（新機能、バグ修正、リファクタリングなど）の把握
+   - プロジェクトへの影響評価
+   - 機密情報の有無確認
+
+3. コミットメッセージの作成
+
+   - 「なぜ」に焦点を当てる
+   - 明確で簡潔な言葉を使用
+   - 変更の目的を正確に反映
+   - 一般的な表現を避ける
+
+4. コミットの実行
+
+   ```bash
+   # 関連ファイルのみをステージング
+   git add <files>
+
+   # コミットメッセージの作成（HEREDOCを使用）
+   git commit -m "$(cat <<'EOF'
+   feat: ユーザー認証にResult型を導入
+
+   - エラー処理をより型安全に
+   - エラーケースの明示的な処理を強制
+   - テストの改善
+
+   EOF
+   )"
+   ```
+
+### プルリクエストの作成
+
+プルリクエストを作成する際は、以下の手順に従います：
+
+1. ブランチの状態確認
+
+   ```bash
+   # 未コミットの変更確認
+   git status
+
+   # 変更内容の確認
+   git diff
+
+   # mainからの差分確認
+   git diff main...HEAD
+
+   # コミット履歴の確認
+   git log
+   ```
+
+2. 変更の分析
+
+   - mainから分岐後のすべてのコミットの確認
+   - 変更の性質と目的の把握
+   - プロジェクトへの影響評価
+   - 機密情報の有無確認
+
+3. プルリクエストの作成
+
+   ```bash
+   # プルリクエストの作成（HEREDOCを使用）
+   gh pr create --title "feat: Result型によるエラー処理の改善" --body "$(cat <<'EOF'
+   ## 概要
+
+   エラー処理をより型安全にするため、Result型を導入しました。
+
+   ## 変更内容
+
+   - neverthrowを使用したResult型の導入
+   - エラーケースの明示的な型定義
+   - テストケースの追加
+
+   ## レビューのポイント
+
+   - Result型の使用方法が適切か
+   - エラーケースの網羅性
+   - テストの十分性
+   EOF
+   )"
+   ```
+
+### 重要な注意事項
+
+1. コミット関連
+
+   - 可能な場合は `git commit -am` を使用
+   - 関係ないファイルは含めない
+   - 空のコミットは作成しない
+   - git設定は変更しない
+
+2. プルリクエスト関連
+
+   - 必要に応じて新しいブランチを作成
+   - 変更を適切にコミット
+   - リモートへのプッシュは `-u` フラグを使用
+   - すべての変更を分析
+
+3. 避けるべき操作
+   - 対話的なgitコマンド（-iフラグ）の使用
+   - リモートリポジトリへの直接プッシュ
+   - git設定の変更
+
+### コミットメッセージの例
+
+```bash
+# 新機能の追加
+feat: Result型によるエラー処理の導入
+
+# 既存機能の改善
+update: キャッシュ機能のパフォーマンス改善
+
+# バグ修正
+fix: 認証トークンの期限切れ処理を修正
+
+# リファクタリング
+refactor: Adapterパターンを使用して外部依存を抽象化
+
+# テスト追加
+test: Result型のエラーケースのテストを追加
+
+# ドキュメント更新
+docs: エラー処理のベストプラクティスを追加
+```
+
+### プルリクエストの例
+
+```markdown
+## 概要
+
+TypeScriptのエラー処理をより型安全にするため、Result型を導入しました。
+
+## 変更内容
+
+- neverthrowライブラリの導入
+- APIクライアントでのResult型の使用
+- エラーケースの型定義
+- テストケースの追加
+
+## 技術的な詳細
+
+- 既存の例外処理をResult型に置き換え
+- エラー型の共通化
+- モック実装の改善
+
+## レビューのポイント
+
+- Result型の使用方法が適切か
+- エラーケースの網羅性
+- テストの十分性
+```
+
+## デプロイ概要
+
+本プロジェクトは、GKE上(開発環境はkind)にk8sアプリケーションとして展開されるマイクロサービスアーキテクチャを採用しています。
+
+### デプロイフロー
+
+このプロジェクトのデプロイフローは以下のように構成されています：
+
+```mermaid
+graph TD
+    A[開発] --> B[テスト実行]
+    B --> C{テスト成功?}
+    C -->|Yes| D[イメージビルド]
+    C -->|No| A
+    D --> E[GKEへデプロイ]
+    E --> F[マイグレーション実行]
+    F --> G[シードデータ投入]
+```
+
+### 重要なファイル
+
+デプロイプロセスを理解・修正する際には、以下のファイルを特に注視する必要があります：
+
+- Dockerfile: コンテナイメージ定義
+- k8s/: Kubernetes設定ファイル
+- .env.example: 環境変数テンプレート
+- prisma/schema.prisma: データベーススキーマ
+
+### 環境変数
+
+デプロイプロセスでは、以下の重要な環境変数が使用されています：
+
+- DATABASE_URL: PostgreSQL接続文字列
+- NODE_ENV: 実行環境（development/production）
+- PORT: アプリケーションポート
+
+### デプロイ後の処理
+
+デプロイプロセスでは、イメージのビルドとプッシュ後に以下の追加タスクが実行されます：
+
+1. **データベースマイグレーション** (`bun prisma migrate deploy`)
+   - Prismaを使用したスキーマ変更の適用
+
+2. **シードデータ投入** (`bun seed:prod`)
+   - 本番環境用の初期データ設定
+
+### インフラストラクチャ
+
+
+### デプロイに関する注意点
+
+### AI支援時のデプロイ作業
+
+AIにデプロイ関連のタスクを依頼する際は、以下の点に注意してください：
+
+AIは必ず上記を精査してから、デプロイ関連のタスクを実行するようにしてください。
+
+## テスト駆動開発 (TDD) ルール
+
+テスト駆動開発 (Test-Driven Development) は、コードを書く前にテストを書くソフトウェア開発手法です。この方法論を採用することで、設計の質を高め、バグの少ないコードを作成し、リファクタリングを安全に行うことができます。
+
+## TDDの基本サイクル
+
+```mermaid
+flowchart LR
+    Red[Red: 失敗するテストを書く] --> Green[Green: テストが通る最小限の実装をする]
+    Green --> Refactor[Refactor: コードを改善する]
+    Refactor --> Red
+```
+
+1. **Red**: まず失敗するテストを書く
+
+   - 必要な機能を明確に定義
+   - 期待する振る舞いをテストコードで表現
+   - この時点ではテストは失敗する（赤）
+
+2. **Green**: テストが通るように最小限の実装をする
+
+   - テストをパスさせるための最も単純な実装を行う
+   - パフォーマンスやコードの美しさより機能性を優先
+   - この時点でテストは成功する（緑）
+
+3. **Refactor**: コードをリファクタリングして改善する
+   - 重複を排除し、コードを整理
+   - 可読性とメンテナンス性を向上
+   - テストが依然として通ることを確認
+
+## TDDの重要な考え方
+
+- **テストは仕様である**: テストコードは実装の仕様を表現したもの
+- **最初に「何を」考え、次に「どのように」考える**: テストで「何を」達成すべきかを明確にしてから、「どのように」実装するかを考える
+- **小さなステップで進める**: 一度に大きな変更を行わず、小さな一歩ずつ進める
+- **テストカバレッジより意図のカバレッジを重視**: 単にコードラインをカバーするだけでなく、ビジネスロジックの意図を正確にテストする
+
+## テスト構造の原則
+
+### AAA (Arrange-Act-Assert) パターン
+
+テストコードは以下の3つのセクションで構成することをお勧めします：
+
+1. **Arrange (準備)**: テストの前提条件を設定
+2. **Act (実行)**: テスト対象の機能を実行
+3. **Assert (検証)**: 期待する結果を検証
+
+```typescript
+// Vitest を使用した例
+describe('UserService', () => {
+  it('should return user by id when user exists', async () => {
+    // Arrange
+    const mockUser = { id: 1, name: 'John Doe' };
+    const userRepositoryMock = {
+      findById: vi.fn().mockResolvedValue(mockUser),
+    };
+    const userService = new UserService(userRepositoryMock);
+
+    // Act
+    const result = await userService.getUserById(1);
+
+    // Assert
+    expect(result).toEqual(mockUser);
+    expect(userRepositoryMock.findById).toHaveBeenCalledWith(1);
+  });
+});
+```
+
+### テスト名の命名規則
+
+良いテスト名は「状況→操作→結果」の形式で記述します：
+
+```typescript
+it('有効なユーザーIDが提供された場合_getUserByIdを呼び出すと_ユーザー情報を返すこと', async () => {
+  // テスト本体
+});
+
+// または英語で
+it('should return user information when getUserById is called with valid user ID', async () => {
+  // テスト本体
+});
+```
+
+## フロントエンドとバックエンドのテスト戦略
+
+### SvelteKitフロントエンドのテスト階層
+
+```mermaid
+flowchart TD
+    Unit[単体テスト: コンポーネント、ユーティリティ] --> Integration[統合テスト: 複数コンポーネント、データフロー]
+    Integration --> E2E[E2Eテスト: ユーザーフロー全体]
+```
+
+#### 単体テスト (Vitest + Testing Library)
+
+```typescript
+// components/Button.test.ts
+import { render, screen, fireEvent } from '@testing-library/svelte';
+import Button from './Button.svelte';
+
+describe('Button', () => {
+  it('renders correctly with text', () => {
+    render(Button, { props: { text: 'Click me' } });
+    expect(screen.getByText('Click me')).toBeInTheDocument();
+  });
+
+  it('calls onClick handler when clicked', async () => {
+    const handleClick = vi.fn();
+    render(Button, { props: { text: 'Click me', onClick: handleClick } });
+    await fireEvent.click(screen.getByText('Click me'));
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+#### 統合テスト
+
+```typescript
+// features/UserProfile.test.ts
+import { render, screen, waitFor } from '@testing-library/svelte';
+import UserProfile from './UserProfile.svelte';
+import { UserProvider } from '../contexts/UserContext';
+
+// モックの設定
+vi.mock('../api/user', () => ({
+  fetchUserData: vi.fn().mockResolvedValue({ name: 'John Doe', email: 'john@example.com' })
+}));
+
+describe('UserProfile', () => {
+  it('fetches and displays user data', async () => {
+    render(UserProfile, {
+      props: { userId: '123' },
+      context: new Map([['user', { name: 'John Doe', email: 'john@example.com' }]])
+    });
+
+    // ローディング状態の確認
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+
+    // データ取得後の表示確認
+    await waitFor(() => {
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    });
+  });
+});
+```
+
+#### E2Eテスト (Playwright)
+
+```typescript
+// e2e/login.spec.ts
+import { test, expect } from '@playwright/test';
+
+test.describe('Login Flow', () => {
+  test('allows user to login and redirects to dashboard', async ({ page }) => {
+    await page.goto('/login');
+
+    await page.fill('input[name="email"]', 'user@example.com');
+    await page.fill('input[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+
+    // ダッシュボードへのリダイレクトと表示確認
+    await expect(page).toHaveURL(/.*dashboard/);
+    await expect(page.locator('h1')).toContainText('Welcome to your Dashboard');
+  });
+});
+```
+
+### SvelteKitバックエンドのテスト階層
+
+```mermaid
+flowchart TD
+    Unit[単体テスト: サーバーアクション、エンドポイント] --> Integration[統合テスト: ルート、ミドルウェア]
+    Integration --> E2E[E2Eテスト: APIエンドポイント全体]
+```
+
+#### 単体テスト (Vitest)
+
+```typescript
+// routes/api/users/+server.ts
+import { describe, it, expect, vi } from 'vitest';
+import { GET } from './+server';
+import type { RequestEvent } from '@sveltejs/kit';
+
+describe('GET /api/users', () => {
+  it('should return user when user exists', async () => {
+    const mockUser = { id: 1, name: 'John Doe' };
+    const mockEvent = {
+      params: { id: '1' },
+      locals: {
+        prisma: {
+          user: {
+            findUnique: vi.fn().mockResolvedValue(mockUser)
+          }
+        }
+      }
+    } as unknown as RequestEvent;
+
+    const response = await GET(mockEvent);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toEqual(mockUser);
+  });
+});
+```
+
+#### 統合テスト
+
+```typescript
+// routes/api/users/+server.test.ts
+import { describe, it, expect, vi } from 'vitest';
+import { app } from '$lib/server/app';
+import { prisma } from '$lib/server/prisma';
+
+describe('Users API', () => {
+  it('should handle user creation', async () => {
+    const mockUser = { name: 'John Doe', email: 'john@example.com' };
+    vi.spyOn(prisma.user, 'create').mockResolvedValue({ id: 1, ...mockUser });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/users',
+      payload: mockUser
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(JSON.parse(response.payload)).toHaveProperty('id');
+  });
+});
+```
+
+## 並行テスト実行
+
+大規模なテストスイートでは、テスト実行時間を短縮するために並行実行が有効です。
+
+### Vitestでの並行テスト実行
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    // CPUコアの50%を使用
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        useAtomics: true,
+      },
+    },
+    // または
+    // 固定ワーカー数
+    poolOptions: {
+      threads: {
+        minThreads: 2,
+        maxThreads: 4,
+      },
+    },
+  },
+});
+```
+
+### 並行テスト実行の注意点
+
+1. **テスト間の独立性確保**
+
+   - テストは他のテストに依存しないこと
+   - 共有リソース（DBなど）へのアクセスを適切に分離
+
+2. **データ分離**
+
+   - テスト用DBの分離またはトランザクションのロールバック
+   - テスト前後のデータクリーンアップ
+
+3. **リソース競合の回避**
+   - ファイル操作やポート使用の競合に注意
+   - 環境変数の競合回避
+
+```typescript
+// マルチテナントDB環境でのテスト分離の例
+beforeEach(async () => {
+  // テスト用のスキーマを動的に生成
+  const schemaName = `test_${Math.random().toString(36).substring(2, 7)}`;
+  await prisma.$executeRaw`CREATE SCHEMA IF NOT EXISTS ${schemaName}`;
+  await prisma.$executeRaw`SET search_path TO ${schemaName},public`;
+
+  // マイグレーション実行
+  await runMigrations(schemaName);
+
+  // このテストのコンテキストにスキーマ名を保存
+  testContext.schemaName = schemaName;
+});
+
+afterEach(async () => {
+  // テスト用スキーマを削除
+  await prisma.$executeRaw`DROP SCHEMA IF EXISTS ${testContext.schemaName} CASCADE`;
+});
+```
+
+## モックとスタブ
+
+### 外部依存のモック化
+
+```typescript
+// ユーザーサービスのテスト
+describe('UsersService', () => {
+  it('should send welcome email when user is created', async () => {
+    // EmailServiceのモック
+    const emailServiceMock = {
+      sendWelcomeEmail: vi.fn().mockResolvedValue(true),
+    };
+
+    const usersService = new UsersService(userRepositoryMock, emailServiceMock);
+
+    await usersService.createUser({ name: 'John', email: 'john@example.com' });
+
+    // EmailServiceが正しく呼び出されたか検証
+    expect(emailServiceMock.sendWelcomeEmail).toHaveBeenCalledWith('john@example.com', 'John');
+  });
+});
+```
+
+### データベースのモック化
+
+Prismaを使用する場合は、`vitest-mock-extended`を使用して効果的にモックできます：
+
+```typescript
+// Prismaクライアントのモック
+import { PrismaClient } from '@prisma/client';
+import { mockDeep, mockReset, DeepMockProxy } from 'vitest-mock-extended';
+
+vi.mock('@prisma/client', () => ({
+  PrismaClient: vi.fn(),
+}));
+
+let prisma: DeepMockProxy<PrismaClient>;
+
+beforeEach(() => {
+  prisma = mockDeep<PrismaClient>();
+  (PrismaClient as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => prisma);
+});
+
+test('should create a new user', async () => {
+  const mockUser = { id: 1, name: 'John', email: 'john@example.com' };
+  prisma.user.create.mockResolvedValue(mockUser);
+
+  const userService = new UserService(prisma);
+  const result = await userService.createUser({ name: 'John', email: 'john@example.com' });
+
+  expect(result).toEqual(mockUser);
+  expect(prisma.user.create).toHaveBeenCalledWith({
+    data: { name: 'John', email: 'john@example.com' },
+  });
+});
+```
+
+## テストリファクタリング
+
+テストコード自体も定期的にリファクタリングすることが大切です：
+
+### DRYなテストコード
+
+```typescript
+// テスト前の共通セットアップ
+function createUserService(overrides = {}) {
+  return new UserService({
+    userRepository: { findById: vi.fn(), save: vi.fn() },
+    emailService: { sendWelcomeEmail: vi.fn() },
+    ...overrides,
+  });
+}
+
+describe('UserService', () => {
+  it('should find user by id', async () => {
+    const mockUser = { id: 1, name: 'John' };
+    const mockUserRepo = { findById: vi.fn().mockResolvedValue(mockUser) };
+    const userService = createUserService({ userRepository: mockUserRepo });
+
+    const result = await userService.findById(1);
+
+    expect(result).toEqual(mockUser);
+  });
+
+  // 他のテスト...
+});
+```
+
+### テストヘルパー関数
+
+```typescript
+// テストユーティリティ
+function createTestUser(overrides = {}) {
+  return {
+    id: 1,
+    name: 'John Doe',
+    email: 'john@example.com',
+    isActive: true,
+    ...overrides,
+  };
+}
+
+it('should activate inactive user', async () => {
+  const inactiveUser = createTestUser({ isActive: false });
+  // ...テストの続き
+});
+```
+
+## コードカバレッジとレポーティング
+
+### Vitestでのカバレッジ測定
+
+```bash
+# カバレッジ測定付きでテスト実行
+bun test --coverage
+```
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  test: {
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+      thresholds: {
+        global: {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80
+        }
+      },
+      exclude: [
+        'src/**/*.d.ts',
+        'src/index.ts',
+        'src/**/*.stories.ts',
+        'src/**/*.test.ts'
+      ]
+    }
+  }
+});
+```
+
+## TDDの導入と習慣化
+
+### TDDへの段階的移行
+
+1. **既存コードへのテスト追加から始める**
+
+   - 重要な機能やバグ修正時にまずテストを追加
+
+2. **新機能開発にTDDを適用**
+
+   - 新しい機能開発時にはテストファーストで進める
+
+3. **チーム内でTDDセッションを実施**
+   - ペアプログラミングやモブプログラミングでTDDを実践
+
+### GitによるTDDの強化
+
+TDDのサイクルに合わせたコミット戦略：
+
+```bash
+# Red: 失敗するテストを書く
+git add src/routes/users/+server.test.ts
+git commit -m "test: Add test for user activation"
+
+# Green: 実装を行い、テストをパスさせる
+git add src/routes/users/+server.ts
+git commit -m "feat: Implement user activation"
+
+# Refactor: コードを改善する
+git add src/routes/users/+server.ts
+git commit -m "refactor: Improve user activation logic"
+```
+
+## SvelteKitのテスト設定
+
+### Vitestの設定
+
+```typescript
+// vitest.config.ts
+import { defineConfig } from 'vitest/config';
+import { sveltekit } from '@sveltejs/kit/vite';
+
+export default defineConfig({
+  plugins: [sveltekit()],
+  test: {
+    include: ['src/**/*.{test,spec}.{js,ts}'],
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'json', 'html'],
+    },
+  },
+});
+```
+
+### Playwrightの設定
+
+```typescript
+// playwright.config.ts
+import type { PlaywrightTestConfig } from '@playwright/test';
+
+const config: PlaywrightTestConfig = {
+  webServer: {
+    command: 'npm run build && npm run preview',
+    port: 4173
+  },
+  testDir: 'e2e',
+  testMatch: /(.+\.)?(test|spec)\.[jt]s/,
+};
+
+export default config;
+```
+
+## まとめ
+
+テスト駆動開発は単なる手法ではなく、品質を重視する姿勢とフィードバックを素早く得るプロセスです。TDDを習慣化することで：
+
+1. **設計の質向上**: 必要な機能を明確に定義し、クリーンなAPIを設計
+2. **バグの削減**: エッジケースやエラー処理を事前に考慮
+3. **リファクタリングの安全性確保**: 既存機能を壊さずにコードを改善
+4. **開発速度の向上**: 初期は遅く感じても、長期的にはバグ修正時間の削減で効率化
+5. **ドキュメントとしての価値**: テストが仕様を示す生きたドキュメントとなる
+
+新たな機能開発や既存コードの修正時には、まずテストから始めることを心がけましょう。
+

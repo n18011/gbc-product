@@ -1,0 +1,91 @@
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE/Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Build artifacts
+*.log
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Kubernetes
+*.kubeconfig
+kubeconfig
+.kube/
+
+# Temporary files
+tmp/
+temp/
+
+# Additional temporary files
+*.bak
+*.cache
+*.pid
+*.dump
+*.[0-9]
+*.old
+*.orig
+*.rej
+
+# Additional log files
+logs/
+*.log.[0-9]*
+*.log.[0-9]*.gz
+monitoring/logs/
+debug.log
+error.log
+access.log
+audit.log
+
+# Environment specific files
+.env.local
+.env.development
+.env.test
+.env.production
+*.local.yaml
+*.dev.yaml
+*.prod.yaml
+*-secret.yaml
+*-credentials.yaml
+
+# Build and deployment artifacts
+dist/
+build/
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+
+# Database files
+*.sqlite
+*.db
+*.sql.gz
+dump.sql
+
+# Cache and package files
+.npm/
+.yarn/
+.pnpm/
+.cache/
