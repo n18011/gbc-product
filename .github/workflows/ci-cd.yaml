@@ -112,7 +112,7 @@ jobs:
       
       # Kindクラスターのセットアップ
       - name: Set up Kind
-        uses: engineerd/setup-kind@v0.27.0
+        uses: engineerd/setup-kind@v0.5.0
         with:
           config: ./kind-config.yaml
       
