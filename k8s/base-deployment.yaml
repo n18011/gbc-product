@@ -80,6 +80,18 @@ spec:
         - name: db-volume
           persistentVolumeClaim:
             claimName: gbc-app-db-pvc
+        - name: config-volume
+          configMap:
+            name: gbc-app-config
+        # SSL証明書をマウントする場合は以下のコメントを解除
+        # - name: ssl-certs
+        #   secret:
+        #     secretName: gbc-app-secrets
+        #     items:
+        #     - key: SSL_CERT
+        #       path: tls.crt
+        #     - key: SSL_KEY
+        #       path: tls.key
       containers:
       - name: gbc-app
         image: nginx:latest
@@ -97,6 +109,60 @@ spec:
             name: logs-volume
           - mountPath: /app/data
             name: db-volume
+          - mountPath: /app/config
+            name: config-volume
+          # SSL証明書をマウントする場合は以下のコメントを解除
+          # - mountPath: /app/certs
+          #   name: ssl-certs
+          #   readOnly: true
+        env:
+          # ConfigMapから環境変数を設定
+          - name: APP_PORT
+            valueFrom:
+              configMapKeyRef:
+                name: gbc-app-config
+                key: APP_PORT
+          - name: APP_HOST
+            valueFrom:
+              configMapKeyRef:
+                name: gbc-app-config
+                key: APP_HOST
+          - name: LOG_LEVEL
+            valueFrom:
+              configMapKeyRef:
+                name: gbc-app-config
+                key: LOG_LEVEL
+          - name: DEBUG_MODE
+            valueFrom:
+              configMapKeyRef:
+                name: gbc-app-config
+                key: DEBUG_MODE
+          - name: ENVIRONMENT
+            valueFrom:
+              configMapKeyRef:
+                name: gbc-app-config
+                key: ENVIRONMENT
+          # Secretから環境変数を設定
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: gbc-app-secrets
+                key: DB_USERNAME
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: gbc-app-secrets
+                key: DB_PASSWORD
+          - name: API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: gbc-app-secrets
+                key: API_KEY
+          - name: JWT_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: gbc-app-secrets
+                key: JWT_SECRET
         readinessProbe:
           httpGet:
             path: /

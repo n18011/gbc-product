@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gbc-app-config-dev
+  labels:
+    app: gbc-app
+    environment: development
+data:
+  # アプリケーション基本設定
+  APP_PORT: "80"
+  APP_HOST: "0.0.0.0"
+  LOG_LEVEL: "debug"  # 開発環境では詳細なログを出力
+  DEBUG_MODE: "true"  # 開発環境ではデバッグモードを有効化
+  
+  # サービス接続設定
+  SERVICE_TIMEOUT: "60"  # 開発環境では長めのタイムアウト
+  RETRY_COUNT: "5"
+  
+  # システム設定
+  MAX_CONNECTIONS: "50"  # 開発環境では接続数を制限
+  
+  # 環境設定
+  ENVIRONMENT: "development"
+  API_ENDPOINT: "http://api-service.dev"
+  
+  # HTMLテンプレート用の設定
+  app-environment.json: |
+    {
+      "environment": "development",
+      "apiBaseUrl": "http://api-service.dev",
+      "features": {
+        "enableAnalytics": false,
+        "enableNotifications": true,
+        "enableDebugTools": true
+      }
+    } 
