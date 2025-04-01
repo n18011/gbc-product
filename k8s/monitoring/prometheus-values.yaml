@@ -8,14 +8,14 @@ fullnameOverride: "monitoring"
 # Prometheusサーバー設定
 prometheus:
   prometheusSpec:
-    # kind環境向けの小さなリソース設定
+    # kind環境向けのリソース設定（最適化済み）
     resources:
       requests:
-        memory: "512Mi"
-        cpu: "100m"
-      limits:
         memory: "1Gi"
-        cpu: "400m"
+        cpu: "200m"
+      limits:
+        memory: "2Gi"
+        cpu: "500m"
     # データ保持期間（7日間）
     retention: "7d"
     # 永続ボリューム設定
@@ -23,7 +23,7 @@ prometheus:
       volumeClaimTemplate:
         spec:
           storageClassName: "nfs-storage"
-          accessModes: ["ReadWriteOnce"]
+          accessModes: ["ReadWriteMany"]
           resources:
             requests:
               storage: "5Gi"
@@ -39,17 +39,24 @@ prometheus:
     ruleSelector:
       matchLabels:
         release: monitoring
+    # ヘルスチェック設定
+    readinessProbeInitialDelay: 60
+    livenessProbeInitialDelay: 120
 
 # Grafana設定
 grafana:
   adminPassword: "admin"
   resources:
     requests:
-      memory: "256Mi"
-      cpu: "100m"
-    limits:
       memory: "512Mi"
       cpu: "200m"
+    limits:
+      memory: "1Gi"
+      cpu: "300m"
+  readinessProbe:
+    initialDelaySeconds: 60
+  livenessProbe:
+    initialDelaySeconds: 120
   persistence:
     enabled: true
     storageClassName: "nfs-storage"
@@ -99,7 +106,7 @@ alertmanager:
       volumeClaimTemplate:
         spec:
           storageClassName: "nfs-storage"
-          accessModes: ["ReadWriteOnce"]
+          accessModes: ["ReadWriteMany"]
           resources:
             requests:
               storage: "1Gi"
