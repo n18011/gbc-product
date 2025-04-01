@@ -1,7 +1,7 @@
 ---
 description: 
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 001_bestPractices_common.mdc
@@ -51,9 +51,6 @@ Kubernetesを使用したマイクロサービスアーキテクチャを採用�
 ├── prisma/                # Prismaの設定
 │   └── schema.prisma     # データベーススキーマ
 ├── k8s/                  # Kubernetes設定
-│   ├── frontend/        # フロントエンド関連
-│   ├── backend/         # バックエンド関連
-│   └── database/       # データベース関連
 ├── docs/                # プロジェクトドキュメント
 └── tests/              # テストファイル
 ```
@@ -483,7 +480,7 @@ TypeScriptのエラー処理をより型安全にするため、Result型を導�
 
 ## デプロイ概要
 
-本プロジェクトは、GKE上(開発環境はkind)にk8sアプリケーションとして展開されるマイクロサービスアーキテクチャを採用しています。
+本プロジェクトは、kind上にk8sアプリケーションとして展開されるマイクロサービスアーキテクチャを採用しています。
 
 ### デプロイフロー
 
