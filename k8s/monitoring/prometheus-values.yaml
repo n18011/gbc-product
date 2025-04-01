@@ -42,6 +42,18 @@ prometheus:
     # ヘルスチェック設定
     readinessProbeInitialDelay: 60
     livenessProbeInitialDelay: 120
+    # スタートアッププローブ設定
+    startupProbe:
+      failureThreshold: 120    # 120回まで失敗を許容（デフォルト60）
+      periodSeconds: 5         # 5秒ごとに確認
+      timeoutSeconds: 5        # タイムアウトを5秒に設定
+    # 機能制限と最適化
+    logLevel: warn             # ログレベルを警告のみに設定
+    scrapeInterval: "60s"      # スクレイプ間隔を延長
+    evaluationInterval: "60s"  # 評価間隔を延長
+    tsdb:
+      outOfOrderTimeWindow: 0  # 時系列データベースの時間順序外サンプルウィンドウを無効化
+    walCompression: true       # WALの圧縮を有効化してディスク使用量を削減
 
 # Grafana設定
 grafana:
