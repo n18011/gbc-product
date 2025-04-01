@@ -23,7 +23,7 @@ prometheus:
       volumeClaimTemplate:
         spec:
           storageClassName: "nfs-storage"
-          accessModes: ["ReadWriteOnce"]
+          accessModes: ["ReadWriteMany"]
           resources:
             requests:
               storage: "5Gi"
@@ -74,6 +74,7 @@ grafana:
     enabled: true
     storageClassName: "nfs-storage"
     size: "2Gi"
+    accessModes: ["ReadWriteMany"]
   service:
     type: ClusterIP
   ingress:
@@ -119,7 +120,7 @@ alertmanager:
       volumeClaimTemplate:
         spec:
           storageClassName: "nfs-storage"
-          accessModes: ["ReadWriteOnce"]
+          accessModes: ["ReadWriteMany"]
           resources:
             requests:
               storage: "1Gi"

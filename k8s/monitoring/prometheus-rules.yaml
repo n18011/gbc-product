@@ -64,6 +64,25 @@ spec:
       annotations:
         summary: "デプロイメントのレプリカが不足しています"
         description: "デプロイメント {{ $labels.namespace }}/{{ $labels.deployment }} の利用可能なレプリカが不足しています"
+    
+    # 予測的リソース枯渇アラート
+    - alert: DiskSpaceFillsUp
+      expr: predict_linear(node_filesystem_free_bytes[6h], 24 * 3600) < 0
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "ディスク空き容量が24時間以内に枯渇する予測"
+        description: "ノード {{ $labels.instance }} のマウントポイント {{ $labels.mountpoint }} のディスク空き容量が24時間以内に枯渇する予測です"
+
+    - alert: NodeMemoryLeakDetected
+      expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.1 and predict_linear(node_memory_MemAvailable_bytes[1h], 6 * 3600) < 0
+      for: 15m
+      labels:
+        severity: critical
+      annotations:
+        summary: "メモリリークの可能性があります"
+        description: "ノード {{ $labels.instance }} で利用可能なメモリが10%未満で、6時間以内に枯渇する予測です。メモリリークの可能性があります。"
 
 ---
 apiVersion: monitoring.coreos.com/v1
@@ -94,4 +113,54 @@ spec:
         severity: warning
       annotations:
         summary: "高いエラーレートが検出されました"
-        description: "HTTP 5xxエラーレートが5%を超えています" 
+        description: "HTTP 5xxエラーレートが5%を超えています"
+
+    # gbc-app固有アラート
+    - alert: GbcAppHighLatency
+      expr: rate(http_request_duration_ms_sum{service="gbc-app"}[5m]) / rate(http_request_duration_ms_count{service="gbc-app"}[5m]) > 500
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "gbc-appの平均レスポンス時間が高すぎます"
+        description: "サービス gbc-app の平均レスポンス時間が500msを超えています (現在: {{ $value }}ms)"
+    
+    - alert: GbcAppErrorSpike
+      expr: sum(increase(http_requests_total{service="gbc-app", status=~"5.."}[5m])) > 10
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "gbc-appのエラー数が急増しています"
+        description: "サービス gbc-app で5分間に10件以上のHTTP 5xxエラーが発生しています"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: business-metrics-rules
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: business.rules
+    rules:
+    # ユーザーアクティビティアラート
+    - alert: UserActivityDrop
+      expr: sum(rate(user_activity_count[30m])) < 0.5 * sum(rate(user_activity_count[30m] offset 1d))
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "ユーザーアクティビティが大幅に減少しています"
+        description: "過去30分間のユーザーアクティビティが、前日同時刻と比較して50%以上減少しています"
+
+    # トランザクション成功率アラート
+    - alert: TransactionSuccessRateLow
+      expr: sum(rate(transaction_total{status="success"}[5m])) / sum(rate(transaction_total[5m])) < 0.95
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "トランザクション成功率が低下しています"
+        description: "トランザクション成功率が95%を下回っています (現在: {{ $value | humanizePercentage }})" 
