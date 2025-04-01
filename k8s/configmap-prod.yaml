@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gbc-app-config-prod
+  labels:
+    app: gbc-app
+    environment: production
+data:
+  # アプリケーション基本設定
+  APP_PORT: "80"
+  APP_HOST: "0.0.0.0"
+  LOG_LEVEL: "warn"  # 本番環境では警告以上のログのみ出力
+  DEBUG_MODE: "false"  # 本番環境ではデバッグモードを無効化
+  
+  # サービス接続設定
+  SERVICE_TIMEOUT: "30"  # 本番環境では適切なタイムアウト
+  RETRY_COUNT: "3"
+  
+  # システム設定
+  MAX_CONNECTIONS: "500"  # 本番環境では多くの接続を許可
+  
+  # 環境設定
+  ENVIRONMENT: "production"
+  API_ENDPOINT: "https://api.example.com"
+  
+  # HTMLテンプレート用の設定
+  app-environment.json: |
+    {
+      "environment": "production",
+      "apiBaseUrl": "https://api.example.com",
+      "features": {
+        "enableAnalytics": true,
+        "enableNotifications": true,
+        "enableDebugTools": false
+      }
+    } 
