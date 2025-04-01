@@ -45,7 +45,7 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 
 # NFSストレージクラスが存在するか確認
-if ! kubectl get storageclass nfs-client &> /dev/null; then
+if ! kubectl get storageclass nfs-storage &> /dev/null; then
     echo -e "${YELLOW}NFSストレージクラスが見つかりません。セットアップを実行します...${NC}"
     kubectl apply -f k8s/nfs-storage-class.yaml
     kubectl apply -f k8s/nfs-server.yaml
@@ -67,10 +67,6 @@ helm install monitoring prometheus-community/kube-prometheus-stack -f k8s/monito
 echo -e "${YELLOW}ServiceMonitorとアラートルールを適用中...${NC}"
 kubectl apply -f k8s/monitoring/service-monitors.yaml
 kubectl apply -f k8s/monitoring/prometheus-rules.yaml
-
-# Grafana Ingressの適用
-echo -e "${YELLOW}Grafana Ingressを適用中...${NC}"
-kubectl apply -f k8s/monitoring/grafana-ingress.yaml
 
 # Podの状態確認
 echo -e "${YELLOW}Podの状態を確認中...${NC}"

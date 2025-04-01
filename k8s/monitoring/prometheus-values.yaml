@@ -22,7 +22,7 @@ prometheus:
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: "nfs-client"
+          storageClassName: "nfs-storage"
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
@@ -43,9 +43,16 @@ prometheus:
 # Grafana設定
 grafana:
   adminPassword: "admin"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
   persistence:
     enabled: true
-    storageClassName: "nfs-client"
+    storageClassName: "nfs-storage"
     size: "2Gi"
   service:
     type: ClusterIP
@@ -91,7 +98,7 @@ alertmanager:
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: "nfs-client"
+          storageClassName: "nfs-storage"
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
