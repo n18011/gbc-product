@@ -1,0 +1,97 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: kubernetes-basic-rules
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: kubernetes.rules
+    rules:
+    # ノードリソース使用率アラート
+    - alert: NodeCPUUsageHigh
+      expr: 100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "高いCPU使用率が検出されました"
+        description: "ノード {{ $labels.instance }} のCPU使用率が80%を超えています (現在: {{ $value }}%)"
+
+    - alert: NodeMemoryUsageHigh
+      expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "高いメモリ使用率が検出されました"
+        description: "ノード {{ $labels.instance }} のメモリ使用率が80%を超えています (現在: {{ $value }}%)"
+
+    - alert: NodeDiskUsageHigh
+      expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 80
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "高いディスク使用率が検出されました"
+        description: "ノード {{ $labels.instance }} のディスク使用率が80%を超えています (現在: {{ $value }}%)"
+
+    # Podの状態アラート
+    - alert: PodCrashLooping
+      expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Podが繰り返し再起動しています"
+        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} が1時間に5回以上再起動しています"
+
+    - alert: PodNotReady
+      expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown"}) > 0
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Podが準備できていません"
+        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} が15分以上Ready状態になっていません"
+
+    # デプロイメント関連アラート
+    - alert: DeploymentReplicasNotAvailable
+      expr: kube_deployment_status_replicas_available / kube_deployment_status_replicas_desired < 1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "デプロイメントのレプリカが不足しています"
+        description: "デプロイメント {{ $labels.namespace }}/{{ $labels.deployment }} の利用可能なレプリカが不足しています"
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: app-rules
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: application.rules
+    rules:
+    # APIレスポンスタイムアラート
+    - alert: APIHighResponseTime
+      expr: http_request_duration_seconds{quantile="0.9"} > 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "APIのレスポンスタイムが遅延しています"
+        description: "エンドポイント {{ $labels.handler }} の90%タイルレスポンスタイムが1秒を超えています"
+
+    # HTTP 5xxエラーレートアラート
+    - alert: HighErrorRate
+      expr: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m])) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "高いエラーレートが検出されました"
+        description: "HTTP 5xxエラーレートが5%を超えています" 

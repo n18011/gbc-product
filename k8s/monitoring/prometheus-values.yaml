@@ -1,0 +1,162 @@
+# kube-prometheus-stack用のHelmチャート値設定
+# kind環境向けの最小構成
+
+# 基本設定
+nameOverride: "monitoring"
+fullnameOverride: "monitoring"
+
+# Prometheusサーバー設定
+prometheus:
+  prometheusSpec:
+    # kind環境向けの小さなリソース設定
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "100m"
+      limits:
+        memory: "1Gi"
+        cpu: "400m"
+    # データ保持期間（7日間）
+    retention: "7d"
+    # 永続ボリューム設定
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: "nfs-storage"
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: "5Gi"
+    # ServiceMonitor設定
+    serviceMonitorSelector:
+      matchLabels:
+        release: monitoring
+    # PodMonitor設定
+    podMonitorSelector:
+      matchLabels:
+        release: monitoring
+    # 設定ルール
+    ruleSelector:
+      matchLabels:
+        release: monitoring
+
+# Grafana設定
+grafana:
+  adminPassword: "admin"
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "200m"
+  persistence:
+    enabled: true
+    storageClassName: "nfs-storage"
+    size: "2Gi"
+  service:
+    type: ClusterIP
+  ingress:
+    enabled: true
+    hosts:
+      - "monitoring.localhost"
+    path: "/"
+  # デフォルトダッシュボード設定
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          editable: true
+          options:
+            path: /var/lib/grafana/dashboards/default
+  # デフォルトのデータソース設定
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://monitoring-prometheus:9090
+          access: proxy
+          isDefault: true
+
+# AlertManager設定
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "50m"
+      limits:
+        memory: "128Mi"
+        cpu: "100m"
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: "nfs-storage"
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: "1Gi"
+    # テスト用の基本構成
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ['alertname', 'job']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 12h
+        receiver: 'null'
+        routes:
+          - match:
+              alertname: Watchdog
+            receiver: 'null'
+      receivers:
+        - name: 'null'
+      inhibit_rules:
+        - source_match:
+            severity: 'critical'
+          target_match:
+            severity: 'warning'
+          equal: ['alertname', 'namespace']
+
+# ノードエクスポーター設定
+nodeExporter:
+  enabled: true
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# kubeletメトリクス設定
+kubelet:
+  enabled: true
+  serviceMonitor:
+    metricRelabelings:
+      # kind環境向けに不要なメトリクスを除外
+      - action: drop
+        regex: kubelet_runtime_operations_latency_microseconds
+        sourceLabels: [__name__]
+
+# kubeStateMetrics設定
+kubeStateMetrics:
+  enabled: true
+
+# prometheusOperator設定
+prometheusOperator:
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "50m"
+    limits:
+      memory: "256Mi"
+      cpu: "100m" 

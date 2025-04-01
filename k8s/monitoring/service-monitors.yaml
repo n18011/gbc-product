@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gbc-app-monitor
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: gbc-app  # アプリケーションのServiceセレクタに合わせて調整
+  endpoints:
+  - port: http      # Serviceのポート名に合わせて調整
+    interval: 15s
+    path: /metrics  # アプリケーションのメトリクスパス
+  namespaceSelector:
+    matchNames:
+    - default       # アプリケーションのNamespace 
