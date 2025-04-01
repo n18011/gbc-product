@@ -8,14 +8,14 @@ fullnameOverride: "monitoring"
 # Prometheusサーバー設定
 prometheus:
   prometheusSpec:
-    # kind環境向けのリソース設定（最適化済み）
+    # リソース設定の最適化
     resources:
       requests:
-        memory: "1Gi"
-        cpu: "200m"
+        memory: "1Gi"  # 512Mi から 1Gi に増加
+        cpu: "200m"    # 100m から 200m に増加
       limits:
-        memory: "2Gi"
-        cpu: "500m"
+        memory: "2Gi"  # 1Gi から 2Gi に増加
+        cpu: "500m"    # 400m から 500m に増加
     # データ保持期間（7日間）
     retention: "7d"
     # 永続ボリューム設定
@@ -23,7 +23,7 @@ prometheus:
       volumeClaimTemplate:
         spec:
           storageClassName: "nfs-storage"
-          accessModes: ["ReadWriteMany"]
+          accessModes: ["ReadWriteOnce"]
           resources:
             requests:
               storage: "5Gi"
@@ -39,9 +39,9 @@ prometheus:
     ruleSelector:
       matchLabels:
         release: monitoring
-    # ヘルスチェック設定
-    readinessProbeInitialDelay: 60
-    livenessProbeInitialDelay: 120
+    # ヘルスチェック待機時間の延長
+    readinessProbeInitialDelay: 60  # 追加
+    livenessProbeInitialDelay: 120  # 追加
     # スタートアッププローブ設定
     startupProbe:
       failureThreshold: 120    # 120回まで失敗を許容（デフォルト60）
@@ -60,15 +60,16 @@ grafana:
   adminPassword: "admin"
   resources:
     requests:
-      memory: "512Mi"
-      cpu: "200m"
+      memory: "512Mi"  # 256Mi から 512Mi に増加
+      cpu: "200m"      # 100m から 200m に増加
     limits:
-      memory: "1Gi"
-      cpu: "300m"
+      memory: "1Gi"    # 512Mi から 1Gi に増加
+      cpu: "300m"      # 200m から 300m に増加
+  # ヘルスチェック待機時間の延長
   readinessProbe:
-    initialDelaySeconds: 60
+    initialDelaySeconds: 60  # 追加
   livenessProbe:
-    initialDelaySeconds: 120
+    initialDelaySeconds: 120  # 追加
   persistence:
     enabled: true
     storageClassName: "nfs-storage"
@@ -109,16 +110,16 @@ alertmanager:
   alertmanagerSpec:
     resources:
       requests:
-        memory: "64Mi"
-        cpu: "50m"
+        memory: "128Mi"  # 64Mi から 128Mi に増加
+        cpu: "100m"      # 50m から 100m に増加
       limits:
-        memory: "128Mi"
-        cpu: "100m"
+        memory: "256Mi"  # 128Mi から 256Mi に増加
+        cpu: "200m"      # 100m から 200m に増加
     storage:
       volumeClaimTemplate:
         spec:
           storageClassName: "nfs-storage"
-          accessModes: ["ReadWriteMany"]
+          accessModes: ["ReadWriteOnce"]
           resources:
             requests:
               storage: "1Gi"
@@ -150,11 +151,11 @@ nodeExporter:
   enabled: true
   resources:
     requests:
-      memory: "64Mi"
-      cpu: "50m"
+      memory: "128Mi"  # 64Mi から 128Mi に増加
+      cpu: "100m"      # 50m から 100m に増加
     limits:
-      memory: "128Mi"
-      cpu: "100m"
+      memory: "256Mi"  # 128Mi から 256Mi に増加
+      cpu: "200m"      # 100m から 200m に増加
 
 # kubeletメトリクス設定
 kubelet:
@@ -174,8 +175,8 @@ kubeStateMetrics:
 prometheusOperator:
   resources:
     requests:
-      memory: "128Mi"
-      cpu: "50m"
+      memory: "256Mi"  # 128Mi から 256Mi に増加
+      cpu: "100m"      # 50m から 100m に増加
     limits:
-      memory: "256Mi"
-      cpu: "100m" 
+      memory: "512Mi"  # 256Mi から 512Mi に増加
+      cpu: "200m"      # 100m から 200m に増加 
