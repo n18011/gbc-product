@@ -8,16 +8,16 @@ fullnameOverride: "monitoring"
 # Prometheusサーバー設定
 prometheus:
   prometheusSpec:
-    # リソース設定の最適化
+    # リソース設定（最小構成）
     resources:
       requests:
-        memory: "1Gi"  # 512Mi から 1Gi に増加
-        cpu: "200m"    # 100m から 200m に増加
+        memory: "256Mi"  # 最小限のメモリ要求
+        cpu: "50m"       # 最小限のCPU要求
       limits:
-        memory: "2Gi"  # 1Gi から 2Gi に増加
-        cpu: "500m"    # 400m から 500m に増加
-    # データ保持期間（7日間）
-    retention: "7d"
+        memory: "512Mi"  # 制限付きメモリ
+        cpu: "100m"      # 制限付きCPU
+    # データ保持期間（短縮）
+    retention: "1d"      # 1日間のデータ保持に短縮
     # 永続ボリューム設定
     storageSpec:
       volumeClaimTemplate:
@@ -26,7 +26,7 @@ prometheus:
           accessModes: ["ReadWriteMany"]
           resources:
             requests:
-              storage: "5Gi"
+              storage: "1Gi"  # ストレージサイズを縮小
     # ServiceMonitor設定
     serviceMonitorSelector:
       matchLabels:
@@ -40,43 +40,53 @@ prometheus:
       matchLabels:
         release: monitoring
     # ヘルスチェック待機時間の延長
-    readinessProbeInitialDelay: 60  # 追加
-    livenessProbeInitialDelay: 120  # 追加
+    readinessProbeInitialDelay: 30  # 短縮
+    livenessProbeInitialDelay: 60   # 短縮
     # スタートアッププローブ設定
     startupProbe:
-      failureThreshold: 120    # 120回まで失敗を許容（デフォルト60）
-      periodSeconds: 5         # 5秒ごとに確認
-      timeoutSeconds: 5        # タイムアウトを5秒に設定
+      failureThreshold: 60     # 回数を減らす
+      periodSeconds: 10        # 間隔を延長
+      timeoutSeconds: 5
     # 機能制限と最適化
-    logLevel: warn             # ログレベルを警告のみに設定
-    scrapeInterval: "60s"      # スクレイプ間隔を延長
-    evaluationInterval: "60s"  # 評価間隔を延長
-    tsdb:
-      outOfOrderTimeWindow: 0  # 時系列データベースの時間順序外サンプルウィンドウを無効化
-    walCompression: true       # WALの圧縮を有効化してディスク使用量を削減
+    logLevel: error           # エラーのみログに記録
+    scrapeInterval: "120s"    # スクレイプ間隔を延長
+    evaluationInterval: "120s" # 評価間隔を延長
+    enableAdminAPI: false     # 管理APIを無効化
+    walCompression: true      # WALの圧縮を有効化
+    # Prometheusルールの最適化
+    rules:
+      alert:
+        forGracePeriod: "5m"  # アラート猶予期間
 
 # Grafana設定
 grafana:
   adminPassword: "admin"
   resources:
     requests:
-      memory: "512Mi"  # 256Mi から 512Mi に増加
-      cpu: "200m"      # 100m から 200m に増加
+      memory: "128Mi"  # 最小限のメモリ要求
+      cpu: "50m"       # 最小限のCPU要求
     limits:
-      memory: "1Gi"    # 512Mi から 1Gi に増加
-      cpu: "300m"      # 200m から 300m に増加
-  # ヘルスチェック待機時間の延長
+      memory: "256Mi"  # 制限付きメモリ
+      cpu: "100m"      # 制限付きCPU
+  # ヘルスチェック設定
   readinessProbe:
-    initialDelaySeconds: 60  # 追加
+    initialDelaySeconds: 30  # 短縮
   livenessProbe:
-    initialDelaySeconds: 120  # 追加
+    initialDelaySeconds: 60  # 短縮
   persistence:
     enabled: true
     storageClassName: "nfs-storage"
-    size: "2Gi"
+    size: "500Mi"  # ストレージサイズを縮小
     accessModes: ["ReadWriteMany"]
   service:
     type: ClusterIP
+  # 機能制限
+  env:
+    GF_FEATURE_TOGGLES_ENABLE: "tempUserDeletion" # 最小限の機能だけ有効化
+    GF_SERVER_DOMAIN: "monitoring.localhost"
+    GF_USERS_ALLOW_SIGN_UP: "false"
+    GF_AUTH_ANONYMOUS_ENABLED: "true" # 認証を簡略化
+    GF_DASHBOARDS_MIN_REFRESH_INTERVAL: "1m" # リフレッシュ間隔を延長
   ingress:
     enabled: true
     hosts:
@@ -111,11 +121,11 @@ alertmanager:
   alertmanagerSpec:
     resources:
       requests:
-        memory: "128Mi"  # 64Mi から 128Mi に増加
-        cpu: "100m"      # 50m から 100m に増加
+        memory: "32Mi"   # 最小限のメモリ要求
+        cpu: "20m"       # 最小限のCPU要求
       limits:
-        memory: "256Mi"  # 128Mi から 256Mi に増加
-        cpu: "200m"      # 100m から 200m に増加
+        memory: "64Mi"   # 制限付きメモリ
+        cpu: "50m"       # 制限付きCPU
     storage:
       volumeClaimTemplate:
         spec:
@@ -123,49 +133,42 @@ alertmanager:
           accessModes: ["ReadWriteMany"]
           resources:
             requests:
-              storage: "1Gi"
-    # テスト用の基本構成
+              storage: "500Mi"  # ストレージサイズを縮小
+    # シンプルな構成
     config:
       global:
         resolve_timeout: 5m
       route:
-        group_by: ['alertname', 'job']
+        group_by: ['alertname']
         group_wait: 30s
         group_interval: 5m
         repeat_interval: 12h
         receiver: 'null'
-        routes:
-          - match:
-              alertname: Watchdog
-            receiver: 'null'
       receivers:
         - name: 'null'
-      inhibit_rules:
-        - source_match:
-            severity: 'critical'
-          target_match:
-            severity: 'warning'
-          equal: ['alertname', 'namespace']
 
 # ノードエクスポーター設定
 nodeExporter:
   enabled: true
   resources:
     requests:
-      memory: "128Mi"  # 64Mi から 128Mi に増加
-      cpu: "100m"      # 50m から 100m に増加
+      memory: "32Mi"  # 最小限のメモリ要求
+      cpu: "20m"      # 最小限のCPU要求
     limits:
-      memory: "256Mi"  # 128Mi から 256Mi に増加
-      cpu: "200m"      # 100m から 200m に増加
+      memory: "64Mi"  # 制限付きメモリ
+      cpu: "50m"      # 制限付きCPU
 
 # kubeletメトリクス設定
 kubelet:
   enabled: true
   serviceMonitor:
     metricRelabelings:
-      # kind環境向けに不要なメトリクスを除外
+      # 不要なメトリクスを除外
       - action: drop
         regex: kubelet_runtime_operations_latency_microseconds
+        sourceLabels: [__name__]
+      - action: drop
+        regex: container_(network_tcp_usage_total|network_udp_usage_total|tasks_state|cpu_load_average_10s)
         sourceLabels: [__name__]
 
 # kubeStateMetrics設定
@@ -176,8 +179,15 @@ kubeStateMetrics:
 prometheusOperator:
   resources:
     requests:
-      memory: "256Mi"  # 128Mi から 256Mi に増加
-      cpu: "100m"      # 50m から 100m に増加
+      memory: "64Mi"  # 最小限のメモリ要求
+      cpu: "25m"      # 最小限のCPU要求
     limits:
-      memory: "512Mi"  # 256Mi から 512Mi に増加
-      cpu: "200m"      # 100m から 200m に増加 
+      memory: "128Mi" # 制限付きメモリ
+      cpu: "50m"      # 制限付きCPU
+  # 最適化設定
+  kubeletService:
+    enabled: false  # kubeletサービスを無効化（リソース節約）
+  admissionWebhooks:
+    enabled: false  # Webhookを無効化
+  tls:
+    enabled: false  # TLSを無効化 
