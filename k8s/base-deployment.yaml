@@ -1,3 +1,57 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: gbc-app-logs-pv
+spec:
+  capacity:
+    storage: 500Mi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  hostPath:
+    path: /tmp/k8s-data/gbc-app/logs
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: gbc-app-db-pv
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  hostPath:
+    path: /tmp/k8s-data/gbc-app/db
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gbc-app-logs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  storageClassName: local-storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gbc-app-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-storage
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -19,6 +73,13 @@ spec:
       labels:
         app: gbc-app
     spec:
+      volumes:
+        - name: logs-volume
+          persistentVolumeClaim:
+            claimName: gbc-app-logs-pvc
+        - name: db-volume
+          persistentVolumeClaim:
+            claimName: gbc-app-db-pvc
       containers:
       - name: gbc-app
         image: nginx:latest
@@ -31,6 +92,11 @@ spec:
           requests:
             cpu: "0.2"
             memory: "256Mi"
+        volumeMounts:
+          - mountPath: /app/logs
+            name: logs-volume
+          - mountPath: /app/data
+            name: db-volume
         readinessProbe:
           httpGet:
             path: /

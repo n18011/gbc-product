@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gbc-app-nfs
+  labels:
+    app: gbc-app-nfs
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gbc-app-nfs
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: gbc-app-nfs
+    spec:
+      volumes:
+        - name: logs-volume
+          persistentVolumeClaim:
+            claimName: gbc-app-logs-pvc-nfs
+        - name: db-volume
+          persistentVolumeClaim:
+            claimName: gbc-app-db-pvc-nfs
+      containers:
+      - name: gbc-app
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.2"
+            memory: "256Mi"
+        volumeMounts:
+          - mountPath: /app/logs
+            name: logs-volume
+          - mountPath: /app/data
+            name: db-volume
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10 

@@ -98,4 +98,46 @@ GitHub Actions を使用するには、以下のシークレットを設定し�
 
 ### マニュアルデプロイ
 
-GitHub Actionsコンソールから「CI/CD Pipeline」ワークフローを手動で実行することもできます。 
+GitHub Actionsコンソールから「CI/CD Pipeline」ワークフローを手動で実行することもできます。
+
+## 永続ボリューム設定
+
+このプロジェクトには、アプリケーションデータの永続化のための設定が含まれています：
+
+- **ログ保存用ボリューム**:
+  - サイズ: 500Mi
+  - アクセスモード: ReadWriteOnce
+  - マウントパス: `/app/logs`
+
+- **DBデータ保存用ボリューム**:
+  - サイズ: 1Gi
+  - アクセスモード: ReadWriteOnce
+  - マウントパス: `/app/data`
+
+### 永続ボリュームのセットアップ
+
+クラスター作成後、永続ボリューム用のディレクトリを準備します：
+
+```bash
+./scripts/prepare-pv-dirs.sh
+```
+
+その後、StorageClassとPV/PVCをデプロイします：
+
+```bash
+kubectl apply -f k8s/local-storage.yaml
+kubectl apply -f k8s/base-deployment.yaml
+```
+
+### 永続ボリュームの検証
+
+永続ボリュームが正常に機能しているか確認するには：
+
+```bash
+./scripts/verify-pv.sh
+```
+
+### 注意事項
+
+- kind環境では`hostPath`を使用した永続化はノードが再起動されるとデータが失われる可能性があります
+- 本番環境移行時には、より適切なストレージソリューションに置き換える必要があります 
